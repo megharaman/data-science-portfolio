@@ -6,12 +6,12 @@ Hi, I'm Megha – a data scientist with a passion for storytelling through data,
 
 ## Projects
 
-### 1. [McDonalds Sales Forecasting](./mcdonalds-forecasting)
+### 1. [McDonalds Sales Forecasting](./projects/mcdonalds-forecasting)
 **Tools:** Python, scikit-learn, Jupyter, k-means, random forest  
 Quantifying the sales lost from McDonalds during COVID-19 Pandemic. Utilize a variety of trend-forecasting mythologies and custom segmentation to calculate the potential realized profit during this period.
 
-- [Notebook](./customer-segmentation/notebook.ipynb)
-- [Interactive HTML Report](./customer-segmentation/report.html)
+- [Notebook](./projects/mcdonalds-forecasting/mcd-data.ipynb)
+- [Interactive HTML Report](./projects/mcdonalds-forecasting/mcd-data.pptx)
 
 ---
 
@@ -20,7 +20,7 @@ Quantifying the sales lost from McDonalds during COVID-19 Pandemic. Utilize a va
 Analyzed NCAA basketball data to uncover patterns and insights by player and team statistics.
 
 - [RMarkdown File](./ncaa-bball-data-analysis/NCAA_basketball_data_analysis.Rmd)
-- [Rendered HTML Report](./ncaa-bball-data-analysis/NCAA_basketball_data_analysis_slidest.html)
+- [Rendered HTML Report](./ncaa-bball-data-analysis/NCAA_basketball_data_analysis_slides.html)
 
 ---
 
