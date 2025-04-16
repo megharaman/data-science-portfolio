@@ -19,8 +19,8 @@ Quantifying the sales lost from McDonalds during COVID-19 Pandemic. Utilize a va
 **Tools:** Python, SQL, Regression, kmeans, HTML  
 Analyzed NCAA basketball data to uncover patterns and insights by player and team statistics.
 
-- [RMarkdown File](./projects//ncaa-bball-data-analysis/NCAA_basketball_data_analysis.Rmd)
-- [Rendered HTML Report](./projects//ncaa-bball-data-analysis/NCAA_basketball_data_analysis_slides.html)
+- [RMarkdown File](./projects/ncaa-bball-data-analysis/NCAA_basketball_data_analysis.Rmd)
+- [Rendered HTML Report](./projects/ncaa-bball-data-analysis/NCAA_basketball_data_analysis_slides.html)
 
 ---
 
