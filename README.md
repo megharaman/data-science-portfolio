@@ -10,7 +10,7 @@ Hi, I'm Megha – a data scientist with a passion for storytelling through data,
 **Tools:** Python, scikit-learn, Jupyter, k-means, random forest  
 Quantifying the sales lost from McDonalds during COVID-19 Pandemic. Utilize a variety of trend-forecasting mythologies and custom segmentation to calculate the potential realized profit during this period.
 
-- [Notebook](./mcdonalds-forecasting/mcd-datat.ipynb)
+- [Notebook](./mcdonalds-forecasting/mcd-data.ipynb)
 - [Interactive HTML Report](./mcdonalds-forecasting/mcd-data.pptx)
 
 ---
