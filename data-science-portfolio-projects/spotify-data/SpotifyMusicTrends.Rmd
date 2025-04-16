@@ -1,0 +1,616 @@
+---
+title: " Modern Data Mining, Final Project"
+author:
+- Megha Raman
+
+output:
+  html_document:
+    code_folding: show
+    highlight: haddock
+    number_sections: yes
+    theme: lumen
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: '4'
+  word_document:
+    toc: yes
+    toc_depth: '4'
+urlcolor: blue
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.height=8, fig.width=10, warning = FALSE, message = FALSE)
+#knitr::opts_chunk$set(results = "hide", fig.width=8, fig.height=4)
+options(scipen = 0, digits = 3)  # controls base R output
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(bestglm, glmnet, leaps, car, tidyverse, pROC, caret, RColorBrewer, corrplot, lubridate,dplyr, reshape, factoextra, cowplot, treemap, ggplot2) # add the packages needed
+```
+
+\pagebreak
+# Executive Summary
+We decided to look into Spotify and their music database. We wanted to identify trends in popular songs, and trends over time in song characteristics. 
+
+The two datasets we used were from kaggle. 
+https://www.kaggle.com/datasets/leonardopena/top-spotify-songs-from-20102019-by-year
+https://www.kaggle.com/datasets/ektanegi/spotifydata-19212020
+They have key metrics of different songs as well as identifying information (artist, title, etc). The 1921-2020 data 170,000 data points and the top songs of the decade are a little under 100. We were able to gain insights from both datasets ot better understand listening.
+
+After an EDA consisting of time series, genre, and text mining analysis, we look into a regression analysis as well as a PCA. After looking at this regression analysis and clustering we can better understand the types of songs that exist in the Spotify realm.
+
+Some limitations we had in the dataset was the lack of “genre” categorization in our larger dataset. This could help narrow and strengthen our analysis. In addition, much of our text mining was done on song titles, which was a much smaller string to analyze. A further study could analyze popular songs and their lyrics to see any major trends. 
+
+
+# Introduction
+
+Spotify is the leader in utilizing analytics for music. Users from all over the world (including us) are drawn to the personalization and data-driven functionality of its app. We wanted to use their data to better understand popularity of songs over time. We bring in data from 2010-2019 charting songs, as well as aggregated data from 1920-2020. 
+
+These were the features we used in our analysis:
+- *Acousticness*: A confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.
+
+- *Danceability*: It describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
+
+- *Duration_ms*: The duration of the track in milliseconds.
+
+- *Energy*: It is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.
+
+- *Instrumentalness*: It indicates whether a track contains no vocals. "Ooh" and "aah" sounds are treated as instrumental in this context. Rap or spoken word tracks are clearly "vocal". The closer the instrumentalness value is to 1.0, the greater likelihood the track contains no vocal content. Values above 0.5 are intended to represent instrumental tracks, but confidence is higher as the value approaches 1.0.
+
+- *Key*: It is The key the track is in. Integers map to pitches using standard Pitch Class notation. E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on. If no key was detected, the value is -1. The range of key is greater than or equal to -1 and lesser than or equal to 11
+
+- *Liveness*: Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+
+- *Loudness*: The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typically range between -60 and 0 db.
+
+- *Mode*: It indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
+
+- *Speechiness*: detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks.
+
+- *Tempo*: The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+
+- *Valence*: A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+
+- *Explicit*: Indicates whether the song has expletives or not. Takes the value 1 if it has and 0 if it doesn't. 
+
+- *Popularity*: Is a measure of the popularity of the song. Value ranges between 0 to 10 with increasing order of popularity.
+
+- *Genre*(only present in 2010-2019 dataset): Indicates the genre of the song as listed on Spotify.
+
+# Goal of the study
+The goal of this project is to better understand what makes a song popular, and key characteristics of popular music. We first implement an extensive EDA in which we identify popular genres, artists, and key metrics that Spotify uses (danceability, duration, energy, instrumentalness, liveness, loudness, speechiness, tempo, valence) to identify popularity in music. We then apply a PCA and clustering model to see if there are any characteristics that are similar in certain types of music. Lastly we run a regression model on popularity.
+
+
+# Data Loading and Cleaning
+
+```{r}
+music <- read.csv("data.csv")
+```
+```{r}
+
+summary(music)
+```
+
+```{r}
+music$duration_ms <- music$duration_ms /1000
+music$artists <- gsub("\\[|\\]", "", music$artists)
+music$artists <- gsub("'","",music$artists)
+#head(music)
+```
+
+
+
+```{r}
+music_clean <- music %>% select(-c(id,))
+#head(music_clean)
+#write.csv(music_clean,"C:\\Users\\kavis\\OneDrive\\Documents\\UPenn Acads\\STAT571\\Project\\cleaned_data.csv", row.names = FALSE)
+```
+
+From the first few rows of the original Spotify music data, we noticed that the artists' names are bracketed and in quotation. We also noticed that duration is in millisecond, which is not an intuitive calculation of time. Therefore, the first step of our data processing was to remove the brackets and quotes from the artists' names. Then, we divided duration by 1000 to get duration data in seconds. Lastly, we removed the id column since it is not helpful for our analysis.
+
+# EDA
+
+## Genre Analysis
+```{r}
+decade <- read.csv("top10s.csv")
+#decade$top.genre
+
+library(treemap)
+decadegenre <- decade %>%
+  mutate(top.genre = as.factor(top.genre)) %>%
+  group_by(top.genre) %>%
+  count(top.genre) %>%
+  filter(n > 2)
+#decadegenre  
+# Plot
+treemap(decadegenre,
+            # data
+            index="top.genre",
+            vSize="n",
+            type="index",
+            
+            # Main
+            title="",
+            palette="Dark2",
+
+            # Borders:
+            border.col=c("black"),             
+            border.lwds=1,                         
+        
+            # Labels
+            fontsize.labels=3,
+            fontcolor.labels="white",
+            fontface.labels=1,            
+            bg.labels=c("transparent"),              
+            align.labels=c("left", "top"),                                  
+            overlap.labels=0.5,
+            inflate.labels=T                        # If true, labels are bigger when rectangle is bigger.
+            )
+```
+
+From this we can see pop dominates the charts. But what is pop? The genre tends to simply refer to the most popular songs at the time, but Spotify allows us to see a more color to this definition. The leading genre is dance pop, referring to high tempo, high danceability songs. Another dominated category is Canadian pop. This was an interesting category to me, and upon further research encompasses Canadian artists who dominate international charts (Drake, Shawn Mendes, etc). 
+
+## Text Mining Analysis
+
+```{r}
+library(rvest)
+library(ggplot2)
+library(dplyr)
+library(magrittr)
+library(tm)
+library(wordcloud)
+library(SnowballC)
+library(topicmodels)
+
+```
+
+```{r}
+#musiccorp <- gsub(".*?([A-Za-z0-9 ]+)\\s.*","\\1", music_clean$name)
+decade.corp.original = VCorpus(VectorSource(decade$title))
+
+#clean the data
+decade.corp = tm_map(decade.corp.original, removePunctuation)
+decade.corp = tm_map(decade.corp, removeNumbers)
+decade.corp = tm_map(decade.corp, content_transformer(tolower) ,lazy=TRUE) 
+decade.corp = tm_map(decade.corp, content_transformer(removeWords), c("TIL") ,lazy=TRUE)
+decade.corp = tm_map(decade.corp, content_transformer(removeWords), stopwords("english") ,lazy=TRUE)
+decade.corp = tm_map(decade.corp, content_transformer(stemDocument) ,lazy=TRUE) 
+decade.corp = tm_map(decade.corp, stripWhitespace)
+```
+
+```{r}
+decade.dtm = DocumentTermMatrix(decade.corp)
+#decade.dtm = removeSparseTerms(decade.dtm, 0.985)
+decade.dtm = as.matrix(decade.dtm)
+
+#look at most frequent words, go back and take out filler words / articles
+decade.word.freq = colSums(decade.dtm)
+decade.word.freq = sort(decade.word.freq, decreasing=T)
+decade.word.freq[1:20]
+```
+
+```{r}
+library(RColorBrewer)
+cor.special <- brewer.pal(8,"Dark2")
+wordcloud(names(decade.word.freq), decade.word.freq, max.words = 50, colors=cor.special, ordered.colors=F, random.order = FALSE, scale = c(10, 1))
+```
+
+Using the titles of each song, we created a corpus and then a document term matrix to identify the most popular words in song titles. We found that the popular words tend to be filler words (the, and, etc.), however, there was some interesting insight in the other words we found. “Like” and “Love” were very popular, indicating that love songs, especially in the 2010s were very popular. Similarly “feat” and “remix” were also very popular in the 2010s. This points to a favorability of collaborations among artists, including with producers to remix their songs. Electronic music and sampling has been a growing theme in today’s music industry. Lastly, we picked up a few names. “Justin”, “Bieber”, and “Cardi” were all popular words, signifying their domination of the charts in the 2010s.
+
+## Annual Trends
+```{r}
+# Yearly average
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(popularity))
+
+# Plot
+pop <- ggplot(music_clean, aes(year, popularity)) + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(speechiness))
+
+# Plot
+spch <- ggplot(music_clean, aes(year, speechiness))  + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(tempo))
+
+# Plot
+tmp <- ggplot(music_clean, aes(year, tempo)) + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(loudness))
+
+# Plot
+loud <- ggplot(music_clean, aes(year, loudness)) + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(duration_ms))
+
+# Plot
+dur <- ggplot(music_clean, aes(year, duration_ms)) + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(instrumentalness))
+
+# Plot
+instr <- ggplot(music_clean, aes(year, instrumentalness))  + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(energy))
+
+# Plot
+energy <- ggplot(music_clean, aes(year, energy))  + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(danceability))
+
+# Plot
+dance <- ggplot(music_clean, aes(year, danceability))  + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(explicit))
+
+# Plot
+exp <- ggplot(music_clean, aes(year, explicit)) + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(acousticness))
+
+# Plot
+acst <- ggplot(music_clean, aes(year, acousticness)) + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+music_y_avg <- music_clean %>% group_by(year) %>% summarise(mean = mean(valence))
+
+# Plot
+val <- ggplot(music_clean, aes(year, valence)) + geom_smooth(data=music_y_avg, aes(year, mean), color='red')
+
+plot_grid(pop, spch, tmp, loud, dur, instr, energy, dance, exp, acst, val)
+
+```
+
+- We observe that the annual average of popularity of songs increases over the years. We notice that there is a sharp rise between 1950 and 1975. This maybe due to a multitude of factors. One obvious reason is that Spotify was launched in 2008 and the majority of users are relatively under 30 years and prefer songs post 1950s.
+- We can see that the speechiness decreases till 1975 and then increases gradually indicating that song from older era consisted of much more spoken word. The increase in speechiness post 1975 can be attricbuted to rise in number of hip-hop and rap songs which are also made of spoken word for a large portion.  
+-The trend in tempo is quite intuitive to understand because we know that songs from the recent era are more fast paced and have a higher beats per minute(bpm) than songs from older era.
+- The trends in loudness is again easy to understand because songs have increasingly become louder over the years given the rise of various genres of metal music.
+- The trend in song duration is interesting to see. The songs got longer till 1980s and then the song duration declined rapidly. This might be due to the reduced attention span because of which the audience prefers shorter songs.
+- The trend in instrumentalness is one we would expect to see. Older songs tend to have more segments dedicated to just instrumental music, whereas songs in the more recent era tend to have less instrumental segments and more vocal segments. This again can be attributed to rise of genres like rap which have almost no instrumental segments.
+- Energy feature shows a trend which we were expecting. Older songs are considerably slow and low intensity than songs from the recent years. The rise is very sharp between 1950 to 2000 but plateaus out after that.
+- The trend in danceability was an interesting one. We did not expect the older songs to have a high dancebility measure. The tren shows that there is a sharp decrease till 1960 but the danceability increase post which is intuitive given the rise of genres like dance pop.
+- The trend in explicit is one we had expected to see. The value is almost constant for a major part from 1920 to 1975 but rises sharply post that. The sharp rise can be attributed to a more open and accepting societal attitude.
+- The trend in acousticness is again natural. Songs from the older generation tend to have more acoustic nature as there were no electric instruments then. With the rise in adoption of electric instruments, the acousticness decreased. 
+- The trend of valence across years is interesting though we did not expect the bump in between from 1960-1980. We expected a decrease in valence because of the rise of low-energy, minor key (sad) music.
+
+##Monthly trends
+Next, we tried to analyze the month-wise trends of the songs
+
+```{r}
+#head(music_clean)
+
+music_temp <- music_clean %>% mutate(Date1 = as.Date(release_date, format = "%Y-%m-%d"),
+          Date2 = as.Date(paste0(release_date,"-01","-01"), format = "%Y-%m-%d"),
+          newdate = ifelse(is.na(Date1), Date2, Date1) %>% as.Date(origin = "1970-01-01"))
+
+
+music_temp$Month <- month(music_temp$Date1)
+music_temp$Month <- as.factor(music_temp$Month)
+#head(music_temp)
+```
+```{r}
+
+music_m_avg <- music_temp %>% group_by(Month) %>% summarise(mean = mean(popularity))
+music_m_avg <- as.data.frame(music_m_avg)
+
+#df <- melt(music_m_avg, "Month")
+# Plot
+p1 <- ggplot(data = subset(music_m_avg, !is.na(Month)), mapping = aes(x = Month, y = mean,group=1)) +
+  geom_point() + geom_smooth() +
+  ggtitle("Popularity over month")
+
+music_m_avg <- music_temp %>% group_by(Month) %>% summarise(mean = mean(loudness))
+music_m_avg <- as.data.frame(music_m_avg)
+
+#df <- melt(music_m_avg, "Month")
+# Plot
+p2 <- ggplot(data = subset(music_m_avg, !is.na(Month)), mapping = aes(x = Month, y = mean,group=1)) +
+  geom_point() + geom_smooth() +
+  ggtitle("Loudness over month")
+
+music_m_avg <- music_temp %>% group_by(Month) %>% summarise(mean = mean(danceability))
+music_m_avg <- as.data.frame(music_m_avg)
+
+#df <- melt(music_m_avg, "Month")
+# Plot
+p3 <- ggplot(data = subset(music_m_avg, !is.na(Month)), mapping = aes(x = Month, y = mean,group=1)) +
+  geom_point() + geom_smooth() +
+  ggtitle("Valence over month")
+
+music_m_avg <- music_temp %>% group_by(Month) %>% summarise(mean = mean(tempo))
+music_m_avg <- as.data.frame(music_m_avg)
+
+#df <- melt(music_m_avg, "Month")
+# Plot
+p4 <- ggplot(data = subset(music_m_avg, !is.na(Month)), mapping = aes(x = Month, y = mean,group=1)) +
+  geom_point() + geom_smooth() +
+  ggtitle("Tempo over month")
+
+music_m_avg <- music_temp %>% group_by(Month) %>% summarise(mean = mean(energy))
+music_m_avg <- as.data.frame(music_m_avg)
+
+#df <- melt(music_m_avg, "Month")
+# Plot
+p5 <- ggplot(data = subset(music_m_avg, !is.na(Month)), mapping = aes(x = Month, y = mean,group=1)) +
+  geom_point() + geom_smooth() +
+  ggtitle("Energy over month")
+
+plot_grid(p1,p2,p3,p4,p5)
+```
+
+- The songs released in summer tend to have a higher popularity rating than songs released in winters. This was according to our expectation but the dip in popularity later in the year is much sharper than we expected.
+- Loudness again follows a similar trend as popularity with summer songs being louder than winter songs. 
+- Valence again repeats the previously observed trends which is expected as summer songs tend to be more positive than winter songs. 
+- The same trend can be seen for tempo, which again matches expectation since summer songs have a higher bpm than winter songs.
+- Finally, we plotted trends of energy and noticed the same behavior which is also intuitive as summer songs are more dynamic than winter songs
+
+## Decade wise analysis
+```{r}
+decades <- c("1920-30", "1930-40", "1940-50", "1950-60", "1960-70", "1970-80", "1980-90", "1990-2000", "2000-10", "2010-20")
+music_clean$decades <- decades[(music_clean$year - 1910 - 1) %/% 10]
+slices <- music_clean %>% group_by(decades) %>% count()
+pie(slices$n, labels = decades, main="Pie Chart of Count by decades")
+```
+
+The pie chart indicates that we have an almost uniform distribution of songs from different decades except 1920-30 and 1930-40 which have a comparatively smaller contribution.
+
+```{r}
+#head(music_clean)
+
+ggplot(music_clean, aes(x=decades, y=popularity, fill=as.factor(explicit))) + 
+    geom_boxplot()
+
+```
+
+The box plot indicates that the popularity of songs with expletives has increased over the years. Additionally, we can also notice that the relative popularity of songs with and without expletives. Song without expletives had a lower popularity than songs with expletives before 1990 but the comparison switches post 2010.
+
+## Correlation
+```{r}
+music_corr <- music_clean %>% select(-c(artists,name,release_date,decades))
+cormat <- round(cor(music_corr),2)
+
+#corrplot(cor_plot, method = 'number')
+
+get_upper_tri <- function(cormat){
+    cormat[lower.tri(cormat)]<- NA
+    return(cormat)
+  }
+
+reorder_cormat <- function(cormat){
+# Use correlation between variables as distance
+dd <- as.dist((1-cormat)/2)
+hc <- hclust(dd)
+cormat <-cormat[hc$order, hc$order]
+}
+
+cormat <- reorder_cormat(cormat)
+upper_tri <- get_upper_tri(cormat)
+# Melt the correlation matrix
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+
+ggheatmap <- ggplot(melted_cormat, aes(X2, X1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+    name="Correlation") +
+  theme_minimal()+ # minimal theme
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()
+
+
+
+ggheatmap + geom_text(aes(X2, X1, label = value), color = "black", size = 4) +theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  legend.justification = c("left", "top"),
+  legend.box.just = "right",
+  legend.position = c(0.99, 0.99),
+  legend.direction = "vertical")+
+  guides(fill = guide_colorbar(barwidth = 1, barheight = 7,
+                title.position = "top", title.hjust = 0.5))
+```
+## Popularity predictor analysis
+
+```{r}
+
+#Exploring popularity
+#head(music_clean)
+music_pop <- music_clean[order(music_clean$popularity, decreasing = TRUE),]
+
+#Exploring factors contributing to popularity
+library(cowplot)
+
+p1 <- ggplot(music_pop, aes(popularity, acousticness, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+p2 <- ggplot(music_pop, aes(popularity,instrumentalness, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+p3 <- ggplot(music_pop, aes(popularity,energy, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+p4 <- ggplot(music_pop, aes(popularity,loudness, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+p5 <- ggplot(music_pop, aes(popularity,danceability, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+p6 <- ggplot(music_pop, aes(popularity,valence, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+p7 <- ggplot(music_pop, aes(popularity,liveness, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+p8 <-ggplot(music_pop, aes(popularity,speechiness, color = popularity)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE,alpha=.4) +
+  scale_color_gradient(low = "#91a8d0", high = "#f7cac9") + 
+  geom_smooth(method='lm')
+
+plot_grid(p1, p2, p3, p4, p5, p6, p7, p8)
+
+```
+
+We explored the relationship between popularity and various factors. We found that popularity of a song is positively associated with energy, loudness, danceability, which means that when a song is more likely to be more popular if it is high energy, loud, and danceable. We also found that popularity has a strong negative association with acousticness and instrumentalness, which shows that a song is likely to not be popular if it's acoustic or high on instrumentalness. It has a slightly negative correlation with liveness and speechiness, and it does not seem to have a correlation with valence (how sad or happy the song is). 
+
+
+## Top Artists 
+```{r}
+
+# In order to ensure an accurate analysis of popularity vs artists, we split the artists who collab on a song by ","
+music_artists <- music_clean %>% 
+   mutate(artists =  strsplit(artists,split=',', fixed=TRUE) ) %>%
+   unnest(c(artists)) 
+
+pop_artists <- music_artists %>% 
+  group_by(artists) %>%
+  summarise(mean_pop = mean(popularity)) %>%
+  arrange(., desc(mean_pop))
+
+
+ggplot(pop_artists[1:10,], aes(x=reorder(artists, -mean_pop), y = mean_pop)) + geom_col()
+
+```
+
+We plot the mean popularity of different artists over the years and find out the top 10 artists. Most of the artists present in the list are quite popular and have really popular songs. Though there are a few artists who are in the list as 'one-hit wonders', who have one song which became really popular but did not produce consistent hits. This was expected because we use mean popularity which would be high for such artists.
+
+# Modeling
+
+In order to explore the relationship between popularity and various predictor variables, we decided to fit a linear regression and use LASSO to fit a model for inference purposes. We are interested in understanding which factors are most significant in terms of determining whether a song is popular.
+
+```{r}
+
+#Drop the categorical variables
+music_subset <- music_clean %>% select(-c(name, artists, release_date, year)) 
+#dim(music_subset)
+
+#Fit all variables
+fit_all <- lm(popularity~., music_subset)
+summary(fit_all)
+```
+
+We decided to drop the categorical variables since the dataset is huge (~170k records), and the categorical variables caused R to terminate due to its size. From the initial summary table of the regression that includes all continuous variables, we observed that most variables besides key and mode seems to be significant. We will perform LASSO to further develop a final, more fitted model.
+
+```{r}
+## LASSO
+
+# data preparation
+Y <- music_subset$popularity # extract Y
+X.music <- model.matrix(popularity~., data=music_subset)[, -1] #extract X matrix
+#colnames(X.music)
+
+fit.lambda <- glmnet(X.music, Y, alpha=1, lambda = 100)
+set.seed(2022)
+fit.cv <- cv.glmnet(X.music, Y, alpha=1, nfolds=10)
+coef.1se <- coef(fit.cv, s="lambda.1se")
+coef.1se <- coef.1se[which(coef.1se !=0),]
+coef.1se
+rownames(as.matrix(coef.1se))
+```
+
+We decided to use output from lambda.1se to get a smaller subset of predictors. With the LASSO output, we were able to form our final model as displayed below. 
+
+```{r}
+fit_final <- lm(popularity~acousticness+danceability+energy+explicit+instrumentalness+liveness+loudness+speechiness+tempo+valence, music_subset)
+summary(fit_final)
+```
+
+Upon examining the summary table of our final table, we found that all of the predictors are significant. We found that acousticness, instrumentalness, liveness, speechiness, and speechiness are all negatively associated with popularity, while danceability, energy, explicitness, loudness, and tempo are positively correlated with popularity.
+
+
+```{r}
+# Model Dianogsis
+par(mfrow=c(1,2))
+plot(fit_final, 1)
+plot(fit_final, 2)
+```
+
+The residual vs fitted plot indicates that linearity seems to hold reasonably well since the red line is close to the dotted line. However, instead of distributing around the middle line randomly, the values seem to hold a downward trend, so the homoscedasticity assumption is not quite met. The normal qq plot suggests that the normality assumption is met since the residuals of the model do not exhibit departure from normality.
+
+## PCA and Clustering
+
+### PCA
+```{r}
+#colnames(music_clean)
+music_pca <- music_clean %>% select(-c(artists,name, release_date, year, decades))
+music.pca <- prcomp(music_pca, center = TRUE,scale. = TRUE)
+```
+```{r}
+summary(music.pca)
+```
+```{r}
+fviz_eig(music.pca)
+```
+
+From the explained variance plot, we noticed that PC3 to PC5 contribute more or less equally and PC6 to PC9 contribute more or less equally.
+
+```{r}
+music.pca
+```
+```{r}
+biplot(music.pca)
+```
+
+
+From the loading and biplot we observe that PC1 roughly separates long, acoustic and instrumental music (soft and soothing music) from high energy, loud songs (dynamic, fast paced songs). Similarly, PC2 roughly speechy, explicit music (rap and hip-hop) from instrumental songs.  
+
+
+### K-means clustering
+```{r}
+set.seed(571)
+music_transform <- music.pca$x[,1:2]
+km.res <- kmeans(music_transform, centers = 4, nstart = 25)
+```
+```{r}
+fviz_cluster(km.res, data = music_transform)
+```
+```{r}
+music_pca$cluster <- km.res$cluster
+cluster1 <- music_pca %>% filter(cluster==1)
+cluster2 <- music_pca %>% filter(cluster==2)
+cluster3 <- music_pca %>% filter(cluster==3)
+cluster4 <- music_pca %>% filter(cluster==4)
+summary(cluster1)
+```
+
+```{r}
+summary(cluster2)
+```
+```{r}
+summary(cluster3)
+```
+```{r}
+summary(cluster4)
+```
+We transformed the original data using the Principal components. We then clustered the data based on the first two Principal components. Next, we summarized the different clusters to analyze their properties. \
+Cluster1: High energy, loud songs(Metal music)
+Cluster2: Highly danceable songs(Dance pop and other pop music)
+Cluster3: Acoustic, instrumental songs(Classical and country music)
+Cluster4: High speechiness songs(Rap and spoken word)
+
+Based on the cluster properties we see that we can infer broad genres from these clusters and can be used as a method for song recommendation. 
+
+# Conclusion
+
+From the final regression model, we concluded that positive danceability, energy, explicitness, loudness, and tempo, and negative acousticness, instrumentalness, liveness, speechiness, and valence correlates to a song’s popularity. We found that if a song is high-energy, upbeat, loud, and with explicit lyrics, it is likely to be more popular than one that is acoustic and with less lyrics and audience. In particular, we found that holding all other variables as constant, the popularity score of a song is expected to increase by 24.34 when danceability increases by one, by 11.74 when energy increases by one, by 8.63 when explicitness of lyrics increases by one, and 0.26 and 0.03 when loudness and tempo increase by one, respectively. This shows that an increase in a song’s danceability, energy, and explicitness brings out a larger magnitude of change in its popularity. The popularity of a song is also expected to increase by 22.02125 when acousticness decreases by one, by 21.04 when valence decreases by one, by 32 when speechiness decreases by one, by 7.28 and 7.62 when instrumentalness and liveness decreases by one, respectively. This tells us that acousticness, valence, and speechiness are stronger as the negative predictors of popularity. \
+From the clustering analysis, we noticed that we were able to broadly classify the data into 4 roughly accurate genres. We conclude that just the first two Principal Components were sufficient to infer the broad genre of the song. These clusters can also be used as a means to recommend songs based on the song's features. The clusters had a few clear distinctions between the features like danceability, energy, speechiness, acousticness, loudness and instrumentalness.

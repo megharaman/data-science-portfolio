@@ -1,0 +1,712 @@
+---
+title: 'Analyst Intern, Data Science & Solutions Project'
+output: html_document
+author: "MEGHA RAMAN"
+date: "`r format(Sys.Date(), '%m/%d/%y')`"
+---
+
+```{r set options, include=FALSE}
+# DO NOT CHANGE THE LINE BELOW 
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``` {css styling, echo=FALSE}
+
+<style>
+.tocify {
+max-width: 175px !important;
+}
+</style>
+
+<style>
+.main-container {
+width: 100%;
+max-width: 940px;
+margin-left: 250px;
+margin-right: auto;
+}
+</style>
+
+<style>
+.red-header {
+  color: red;
+}
+</style>
+
+```
+
+```{r logo, echo = FALSE}
+
+htmltools::img(src = 'https://cdn.nba.com/logos/nba/1610612760/primary/L/logo.svg',
+                height = '250px',
+                alt = 'logo',
+                style = 'position: fixed; top: -40px; left: 5px;')
+```
+
+
+# Introduction  
+
+The purpose of this project is to gauge your technical skills and problem solving ability by working through something similar to a real NBA data science project. You will work your way through this R Markdown document, answering questions as you go along. Please begin by adding your name to the "author" key in the YAML header. When you're finished with the document, come back and type your answers into the answer key at the top. Please leave all your work below and have your answers where indicated below as well. Please note that we will be reviewing your code so make it clear, concise and avoid long printouts. Feel free to add in as many new code chunks as you'd like.
+
+Remember that we will be grading the quality of your code and visuals alongside the correctness of your answers. Please try to use the tidyverse as much as possible (instead of base R and explicit loops.)  
+
+**Note:**    
+
+**Throughout this document, any `season` column represents the year each season started. For example, the 2015-16 season will be in the dataset as 2015. For most of the rest of the project, we will refer to a season by just this number (e.g. 2015) instead of the full text (e.g. 2015-16).**   
+
+<h1 class="red-header">Answers</h1>  
+
+## Part 1      
+
+**Question 1:**   
+
+- 1st Team: 25.9 points per game  
+- 2nd Team: 23.1 points per game  
+- 3rd Team: 20.5 points per game  
+- All-Star: 21.6 points per game   
+
+**Question 2:** 4.7 Years  
+
+**Question 3:** 
+
+- Elite: 2 players.  
+- All-Star: 1 players.  
+- Starter: 11 players.  
+- Rotation: 7 players.  
+- Roster: 15 players.  
+- Out of League: 8 players.  
+
+**Open Ended Modeling Question:** Please show your work and leave all responses below in the document.
+
+
+## Part 2  
+
+**Question 1:** 30.3%   
+**Question 2:** Written question, put answer below in the document.    
+**Question 3:** Written question, put answer below in the document.    
+  
+
+# Setup and Data 
+
+```{r}
+library(stargazer)
+library(GGally)
+library(reshape)
+library(ggcorrplot)
+library(glmnet)
+library(stats)
+library(bestglm)
+library(pROC)
+library(nnet)
+library(naivebayes)
+library(mlbench)
+library(caret)
+library(randomForest)
+library(reactable)
+library(drat)
+library(xgboost)
+pacman::p_load(dplyr, ggplot2,  leaps, car, tidyverse, GGally, reshape2, skimr, stargazer)
+```
+
+
+```{r load data, message = F, warning = F}
+library(tidyverse)
+# Note, you will likely have to change these paths. If your data is in the same folder as this project, 
+# the paths will likely be fixed for you by deleting ../../Data/awards_project/ from each string.
+awards <- read_csv("awards_data.csv")
+player_data <- read_csv("player_stats.csv")
+team_data <- read_csv("team_stats.csv")
+rebounding_data <- read_csv("team_rebounding_data_22.csv")
+```
+
+## Part 1 -- Awards  
+
+In this section, you're going to work with data relating to player awards and statistics. You'll start with some data manipulation questions and work towards building a model to predict broad levels of career success.  
+
+### Question 1  
+
+**QUESTION:** What is the average number of points per game for players in the 2007-2021 seasons who won All NBA First, Second, and Third teams (**not** the All Defensive Teams), as well as for players who were in the All-Star Game (**not** the rookie all-star game)?
+
+```{r}
+# Here and for all future questions, feel free to add as many code chunks as you like. Do NOT put echo = F though, we'll want to see your code.
+```
+
+```{r}
+# View(awards)
+# View(player_data)
+# View(team_data)
+# View(rebounding_data)
+# head(awards)
+# head(player_data)
+```
+
+```{r}
+# nrow(awards)
+# nrow(player_data)
+
+awards_player_data <- left_join(player_data, awards, by = c("nbapersonid","season"), copy = FALSE)
+awards_player_data
+
+#player_awards_data <- right_join(player_data, awards, by = c("nbapersonid","season"), copy = FALSE)
+
+avgpointsawardsNBA1 <- awards_player_data %>%
+  subset(`All NBA First Team` == 1) %>%
+  select(c(nbapersonid,player,games,points,`All NBA First Team`)) %>%
+  mutate(points_per_game =points / games)
+# avgpointsawardsNBA1
+paste("The average number of points per game for the All NBA First team is", mean(avgpointsawardsNBA1$points_per_game))
+#25.85244
+
+avgpointsawardsNBA2 <- awards_player_data %>%
+  subset(`All NBA Second Team` == 1) %>%
+  select(c(nbapersonid,player,games,points,`All NBA Second Team`)) %>%
+  mutate(points_per_game =points / games) 
+#avgpointsawardsNBA2
+paste("The average number of points per game for the All NBA Second team is", mean(avgpointsawardsNBA2$points_per_game))
+#23.08154
+
+avgpointsawardsNBA3 <- awards_player_data %>%
+  subset(`All NBA Third Team` == 1) %>%
+  select(c(nbapersonid,player,games,points,`All NBA Third Team`)) %>%
+  mutate(points_per_game =points / games) 
+#avgpointsawardsNBA3
+paste("The average number of points per game for the All NBA Third team is", mean(avgpointsawardsNBA3$points_per_game))
+#20.50349
+
+avgpointsawardsNBAas <- awards_player_data %>%
+  subset(all_star_game == TRUE) %>%
+  select(c(nbapersonid,player,games,points,all_star_game)) %>%
+  mutate(points_per_game =points / games) 
+#avgpointsawardsNBAas
+paste("The average number of points per game for the All NBA All-Star team is", mean(avgpointsawardsNBAas$points_per_game))
+#21.57878
+
+```
+
+<span style="color:red">**ANSWER 1:**</span>  
+
+1st Team: 25.85244 points per game  
+2nd Team: 23.08154 points per game  
+3rd Team: 20.50349 points per game  
+All-Star: 21.57878 points per game   
+
+
+### Question 2  
+
+**QUESTION:** What was the average number of years of experience in the league it takes for players to make their first All NBA Selection (1st, 2nd, or 3rd team)? Please limit your sample to players drafted in 2007 or later who did eventually go on to win at least one All NBA selection. For example:
+
+- Luka Doncic is in the dataset as 2 years. He was drafted in 2018 and won his first All NBA award in 2019 (which was his second season).  
+- LeBron James is not in this dataset, as he was drafted prior to 2007.  
+- Lu Dort is not in this dataset, as he has not received any All NBA honors.  
+
+```{r}
+awards_player_data_q2 <- awards_player_data %>%
+  subset(draftyear >= 2007 & (`All NBA First Team` == 1 |`All NBA Second Team` ==1 | `All NBA Third Team` == 1 )) %>%
+  select(nbapersonid, player,draftyear, season, `All NBA First Team`, `All NBA Second Team`, `All NBA Third Team`) %>%
+  arrange(nbapersonid,season) %>%
+  group_by(nbapersonid) %>%
+  slice_head(n=1) %>%
+  mutate(experience = season - draftyear + 1)
+awards_player_data_q2
+paste("The average number of years of experience in the league it takes for players to make their first All NBA Selection is", mean(awards_player_data_q2$experience))
+#4.682927
+
+# awards_player_data_q2$player
+# awards_player_data_q2[awards_player_data_q2$player == "Luka Dončić",]
+# awards_player_data_q2[awards_player_data_q2$player == "LeBron James",]
+# awards_player_data_q2[awards_player_data_q2$player == "Lu Dort",]
+
+
+```
+
+<span style="color:red">**ANSWER 2:**</span>  
+
+4.683 Years  
+
+
+## Data Cleaning Interlude  
+
+You're going to work to create a dataset with a "career outcome" for each player, representing the highest level of success that the player achieved for **at least two** seasons *after his first four seasons in the league* (examples to follow below!). To do this, you'll start with single season level outcomes. On a single season level, the outcomes are:  
+
+- Elite: A player is "Elite" in a season if he won any All NBA award (1st, 2nd, or 3rd team), MVP, or DPOY in that season.    
+- All-Star: A player is "All-Star" in a season if he was selected to be an All-Star that season.   
+- Starter:  A player is a "Starter" in a season if he started in at least 41 games in the season OR if he played at least 2000 minutes in the season.    
+- Rotation:  A player is a "Rotation" player in a season if he played at least 1000 minutes in the season.   
+- Roster:  A player is a "Roster" player in a season if he played at least 1 minute for an NBA team but did not meet any of the above criteria.     
+- Out of the League: A player is "Out of the League" if he is not in the NBA in that season.    
+
+We need to make an adjustment for determining Starter/Rotation qualifications for a few seasons that didn't have 82 games per team. Assume that there were 66 possible games in the 2011 lockout season and 72 possible games in each of the 2019 and 2020 seasons that were shortened due to covid. Specifically, if a player played 900 minutes in 2011, he **would** meet the rotation criteria because his final minutes would be considered to be 900 * (82/66) = 1118. Please use this math for both minutes and games started, so a player who started 38 games in 2019 or 2020 would be considered to have started 38 * (82/72) = 43 games, and thus would qualify for starting 41. Any answers should be calculated assuming you round the multiplied values to the nearest whole number.
+
+Note that on a season level, a player's outcome is the highest level of success he qualifies for in that season. Thus, since Shai Gilgeous-Alexander was both All-NBA 1st team and an All-Star last year, he would be considered to be "Elite" for the 2022 season, but would still qualify for a career outcome of All-Star if in the rest of his career he made one more All-Star game but no more All-NBA teams. Note this is a hypothetical, and Shai has not yet played enough to have a career outcome.   
+
+Examples:  
+
+- A player who enters the league as a rookie and has season outcomes of Roster (1), Rotation (2), Rotation (3), Roster (4), Roster (5), Out of the League (6+) would be considered "Out of the League," because after his first four seasons, he only has a single Roster year, which does not qualify him for any success outcome.  
+- A player who enters the league as a rookie and has season outcomes of Roster (1), Rotation (2), Starter (3), Starter (4), Starter (5), Starter (6), All-Star (7), Elite (8), Starter (9) would be considered "All-Star," because he had at least two seasons after his first four at all-star level of production or higher.  
+- A player who enters the league as a rookie and has season outcomes of Roster (1), Rotation (2), Starter (3), Starter (4), Starter (5), Starter (6), Rotation (7), Rotation (8), Roster (9) would be considered a "Starter" because he has two seasons after his first four at a starter level of production. 
+
+```{r}
+# awards_player_data %>%
+#   filter(all_star_game == TRUE & games_start < 41 & mins < 2000)
+
+career_data <- awards_player_data %>%
+  mutate(season_career = case_when((`All NBA First Team` == 1 | `All NBA Second Team` == 1 |`All NBA Third Team` == 1 |
+                                     `Defensive Player Of The Year_rk` == 1 | `Most Valuable Player_rk` == 1) ~ 'Elite',
+                                   (all_star_game == TRUE) ~ 'All-Star',
+                                   (games_start >= 41 | mins >= 2000) | 
+                                     ((season == 2011) & (round(mins * 82/66) >= 2000 | round(games_start * 82/66) >= 41)) | 
+                                        ((season == 2019 | season == 2020) & (round(mins * 82/72) >= 2000 | round(games_start * 82/72) >= 41)) ~ 'Starter',
+                                   (mins >= 1000) | 
+                                     ((season == 2011) & (round(mins * 82/66) >= 1000)) | 
+                                     ((season == 2019 | season == 2020) & (round(mins * 82/72) >= 1000)) ~ 'Rotation',
+                                   (mins >= 1) ~ 'Roster',
+                                   TRUE ~ 'Out of the League'
+                                   ))
+
+career_data_5 <- career_data %>%
+  select(player, draftyear, season, season_career) %>%
+  arrange(player,season) %>%
+  mutate(years = season - draftyear) %>%
+  filter(years > 4) %>%
+  count(player, season_career) %>%
+  group_by(player) %>% 
+  pivot_wider(names_from = season_career, values_from = n) %>%
+  mutate(career = case_when((Elite >= 2) ~ 'Elite',
+         (`All-Star` >= 2 | (`All-Star` == 1 & Elite == 1)) ~ 'All-Star',
+         (Starter >= 2) ~ 'Starter',
+         (Rotation >= 2 | (Rotation == 1 & Starter == 1)) ~ 'Rotation',
+         (Roster >=2 | (Roster == 1 & Rotation == 1)) ~ 'Roster',
+         TRUE ~ 'Out of the League'))
+career_data_5 
+```
+
+### Question 3  
+
+**QUESTION:** There are 73 players in the `player_data` dataset who have 2010 listed as their draft year. How many of those players have a **career** outcome in each of the 6 buckets?  
+
+```{r}
+# career_data %>%
+#   filter (draftyear == 2010) %>%
+#   count(nbapersonid)
+
+career_data_2010 <- career_data %>%
+  filter (draftyear == 2010) %>%
+  select(player, draftyear, season, season_career) %>%
+  arrange(player,season) %>%
+  mutate(years = season - draftyear + 1) %>%
+  filter(years > 4) %>%
+  count(player, season_career) %>%
+  group_by(player) %>% 
+  pivot_wider(names_from = season_career, values_from = n) %>% 
+  mutate(career = case_when((Elite >= 2) ~ 'Elite',
+         (`All-Star` >= 2 | (`All-Star` == 1 & Elite == 1)) ~ 'All-Star',
+         (Starter >= 2 | (Starter == 1 & `All-Star` == 1)) ~ 'Starter',
+         (Rotation >= 2 | (Rotation == 1 & Starter == 1)) ~ 'Rotation',
+         (Roster >=2 | (Roster == 1 & Rotation == 1)) ~ 'Roster',
+         TRUE ~ 'Out of the League'))
+career_data_2010 
+
+career_data_2010_counts <- career_data_2010 %>%
+  ungroup(player) %>%
+  count(career)
+career_data_2010_counts
+```
+
+<span style="color:red">**ANSWER 3:**</span>    
+
+Elite: 2 players.  
+All-Star: 1 players.  
+Starter: 11 players.  
+Rotation: 7 players.  
+Roster: 15 players.  
+Out of League: 8 players.  
+
+### Open Ended Modeling Question   
+
+In this question, you will work to build a model to predict a player's career outcome based on information up through the first four years of his career. 
+
+This question is intentionally left fairly open ended, but here are some notes and specifications.  
+
+1. We know modeling questions can take a long time, and that qualified candidates will have different levels of experience with "formal" modeling. Don't be discouraged. It's not our intention to make you spend excessive time here. If you get your model to a good spot but think you could do better by spending a lot more time, you can just write a bit about your ideas for future improvement and leave it there. Further, we're more interested in your thought process and critical thinking than we are in specific modeling techniques. Using smart features is more important than using fancy mathematical machinery, and a successful candidate could use a simple regression approach. 
+
+2. You may use any data provided in this project, but please do not bring in any external sources of data. Note that while most of the data provided goes back to 2007, All NBA and All Rookie team voting is only included back to 2011.  
+
+3. A player needs to complete at least three additional seasons after their first four to be considered as having a distinct career outcome for our dataset. (We are using 3+ instead of 2+ just to give each player a little more time to accumulate high level seasons before we classify his career). Because the dataset in this project ends in 2021, this means that a player would need to have had the chance to play in the '21, '20, and '19 seasons after his first four years, and thus his first four years would have been '18, '17, '16, and '15. **For this reason, limit your training data to players who were drafted in or before the 2015 season.** Karl-Anthony Towns was the #1 pick in that season.  
+
+4. Once you build your model, predict on all players who were drafted in 2018-2021 (They have between 1 and 4 seasons of data available and have not yet started accumulating seasons that inform their career outcome).  
+
+5. You can predict a single career outcome for each player, but it's better if you can predict the probability that each player falls into each outcome bucket.    
+
+6. Include, as part of your answer:  
+  - A brief written overview of how your model works, targeted towards a decision maker in the front office without a strong statistical background. 
+  - What you view as the strengths and weaknesses of your model.  
+  - How you'd address the weaknesses if you had more time and or more data.  
+  - A ggplot or ggplotly visualization highlighting some part of your modeling process, the model itself, or your results.  
+  - Your predictions for Shai Gilgeous-Alexander, Zion Williamson, James Wiseman, and Josh Giddey.  
+  - (Bonus!) An html table (for example, see the package `reactable`) containing all predictions for the players drafted in 2019-2021.  
+
+**Overview of Model**  
+The model I have chosen for this exercise is a NaiveBayes. After trying binomial logistic regression, multinomial logistic regression, and random forest, I settled on NaiveBayes to best capture the output values of the data. In order to capture the categorical nature of the data, NaiveBayes works better to capture the nuances between the different career outcomes. Moreover, it provides a probability of each outcome based on a posterior probability of the training data career outcomes and the variables selected.
+
+The strengths of the model are the general robustness of the results. Incorporating one or removing one variable does not change the outcomes significantly, thus relying on the inputs 
+The weaknesses of the model 
+Given more time, I would have liked to try a boosted or bagged model.
+
+**Model Inputs**
+The inputs chosen for this model were:
+-games
+-games_start 
+-WS
+-PER
+-BPM 
+-VORP 
+-rookie_all_star_game 
+-season_career
+I wanted to select variables that were not heavily correlated with one another, and ones that were not raw statistic measures. WS, PER, BPM, and VORP are engineered features that capture many of the nuances of the other variables. I wanted to include a metric that also captured the magnitude of play, thus games and games started. Lastly, the two categorical variables I chose were rookie all star game and season career. Rookie all star game was simply to capture any "hot hands" early on of players who were dominating in their first years. Season career helped translate some of the other accolades a player could receive. 
+
+The data was  difficult to capture fully. As the data is given by player and season, the model will thus output different values for each line. I then used the probabilities and decided to go with the final prediction of the model. Given more time, I would have aggregated these metrics by player, to come up with a more nuanced result. 
+
+Moreover, the feature selection process itself was iterative and included a lot of personal judgements on the variables. As a next step, I would want to use some sort of unsupervised learning or feature selection coded process for both numeric and categorical variables.
+
+**Model Outputs**
+The model predicts the following career outcomes for the players listed:
+Shai Gilgeous-Alexander: All Star
+Zion Williamson: Elite
+James Wiseman: Roster
+Josh Giddey: Starter
+
+**Model Process**  
+The code below walks you through my steps. First, using the raw player and awards data, I identified which categories were highly correlated. It seems that many of the quantitative performance metrics were 
+I was surprised to see that less of the categorical metrics had this same issue.
+Through this process, I also recognized the difficult nature of percent and rank variables. Percentages vary much less in range, and do not capture magnitude, which becomes important in evaluating players. For example, if they only attempted 5 free throws and made all of them, it does not exactly translate to someone who attempted 30 and made 29. Similarly, rank variables either gave a player a numbered value or none at all. I made the decision to remove percentages and ordinal variables, although further examination beyond this project might be interesting.
+
+In the appendix you can see the linear model, logistic regression, and multinomial models I tried before landing on the naivebayes. NaiveBayes takes much less time to run, and captured the categories well. It also performed at a relatively low error rate.
+
+
+```{r}
+# player_data_var %>%
+#   select_if(is.numeric) %>%
+#   ggpairs() 
+
+player_data_var <- player_data %>% select_if(is.numeric) %>%
+  select(-c(nbapersonid,draftpick,fgp,fgp3,fgp2,efg,ftp, tov_pct, FTr)) 
+player_data_corr <- player_data_var %>%
+  cor()
+#player_data_corr
+```
+
+```{r}
+cor_matrix <- cor(player_data_var[sapply(player_data_var, is.numeric)])
+heatmap(cor_matrix, Rowv = NA, Colv = NA)
+
+plotData <-melt(cor_matrix)
+
+ggplot(plotData ,
+    aes(x = Var1, y = Var2, fill =value)) +
+    geom_tile() +
+    ylab("") +
+    xlab("") +
+scale_x_discrete(limits = rev(levels(plotData$Var2))) +
+    scale_fill_gradient( low = "#56B1F7", high = "#132B43") +
+       guides(fill = guide_legend(title = "Correlation")) +
+  theme(axis.text.x = element_text(angle = 50, hjust = 1))
+```
+
+```{r}
+awards_var <- awards %>%
+  select(season, `All NBA Defensive First Team`, `All NBA Defensive Second Team`, `All NBA First Team`, `All NBA Second Team`, `All NBA Third Team`, `All Rookie First Team`, `All Rookie Second Team`, `Bill Russell NBA Finals MVP`, `Player Of The Month`, `Player Of The Week`, `Rookie Of The Month`, all_star_game, rookie_all_star_game) 
+model.matrix(~0+., data=awards_var) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag=FALSE, type="full", lab=TRUE, lab_size=2)
+```
+
+```{r}
+career_data_2015 <- career_data %>%
+  filter(draftyear <= 2015) %>%
+  select(player, draftyear, season, season_career) %>%
+  arrange(player,season) %>%
+  mutate(years = season - draftyear + 1) %>%
+  filter(years > 4) %>%
+  count(player, season_career) %>%
+  group_by(player) %>% 
+  pivot_wider(names_from = season_career, values_from = n) %>% 
+  mutate(career = case_when((Elite >= 2) ~ 'Elite',
+         (`All-Star` >= 2 | (`All-Star` == 1 & Elite == 1)) ~ 'All-Star',
+         (Starter >= 2 | (Starter == 1 & `All-Star` == 1)) ~ 'Starter',
+         (Rotation >= 2 | (Rotation == 1 & Starter == 1)) ~ 'Rotation',
+         (Roster >=2 | (Roster == 1 & Rotation == 1)) ~ 'Roster',
+         TRUE ~ 'Out of the League'))
+career_data_2015 
+```
+
+
+```{r}
+career_data_copy <- career_data
+career_data_outcomes <- left_join(career_data_copy, career_data_2015, on = "player" )
+# career_data_outcomes[career_data_outcomes['player'] == 'Kevin Durant', ]
+
+career_outcomes <- c("No Career Outcome", "Out of the League","Roster", "Rotation", "Starter", "All-Star", "Elite" )
+career_data_train <- career_data_outcomes %>%
+  mutate(all_star_game = as.integer(as.logical(all_star_game))) %>%
+  mutate(rookie_all_star_game = as.integer(as.logical(rookie_all_star_game))) %>%
+  mutate_all(~replace_na(.,0)) %>%
+  mutate(season_career = factor(season_career, levels = career_outcomes, ordered = TRUE)) %>%
+  mutate(career = factor(career, levels = career_outcomes, ordered = TRUE)) %>%
+  mutate_at('career', ~replace_na(.,'No Career Outcome')) 
+
+career_data_test <- career_data %>%
+  filter(draftyear > 2015) %>%
+  mutate(season_career = factor(season_career, levels = career_outcomes, ordered = TRUE)) %>%
+  mutate(all_star_game = as.integer(as.logical(all_star_game))) %>%
+  mutate(rookie_all_star_game = as.integer(as.logical(rookie_all_star_game))) %>%
+  mutate_all(~replace_na(.,0))
+
+career_data_train
+career_data_test
+
+```
+
+```{r}
+#Model 4: Naive Bayes
+set.seed(725)
+model <- naive_bayes(career ~ games + games_start + WS + PER + BPM +VORP +rookie_all_star_game + season_career, data = career_data_train, laplace = 2, usekernel = T) 
+summary(model)
+
+default_pred <- predict(model, career_data_test, type="class")
+#default_pred
+default_raw_pred <- predict(model, career_data_test, type="prob")
+#default_raw_pred
+```
+
+```{r}
+pred <- data.frame(career_data_test,default_pred,default_raw_pred) %>%
+  rename(`career prediction` = default_pred) %>%
+  rename(`No Career Outcome` = No.Career.Outcome) %>%
+  rename(`Out of the League` = Out.of.the.League ) %>%
+  rename(`All-Star` = All.Star)
+
+pred_final <- pred %>%
+  filter(draftyear >= 2019) %>%
+  select(nbapersonid, player, draftyear, season, `career prediction`,`No Career Outcome`,`Out of the League`, `Roster`, `Rotation`, `Starter`, `All-Star`, `Elite` )
+reactable(pred_final)
+
+# pred[pred['player'] == 'Shai Gilgeous-Alexander',] 
+# #All Star
+# pred[pred['player'] == 'Zion Williamson',] 
+# #Elite
+# pred[pred['player'] == 'James Wiseman',] 
+# #Roster
+# pred[pred['player'] == 'Josh Giddey',] 
+# #Starter
+
+```
+
+
+```{r}
+# cm <- table(pred$career, default_pred)
+# cm
+# confusionMatrix(model)
+
+```
+
+## Part 2 -- Predicting Team Stats  
+
+In this section, we're going to introduce a simple way to predict team offensive rebound percent in the next game and then discuss ways to improve those predictions.  
+ 
+### Question 1   
+
+Using the `rebounding_data` dataset, we'll predict a team's next game's offensive rebounding percent to be their average offensive rebounding percent in all prior games. On a single game level, offensive rebounding percent is the number of offensive rebounds divided by their number offensive rebound "chances" (essentially the team's missed shots). On a multi-game sample, it should be the total number of offensive rebounds divided by the total number of offensive rebound chances.    
+
+Please calculate what OKC's predicted offensive rebound percent is for game 81 in the data. That is, use games 1-80 to predict game 81.  
+
+```{r}
+rebounding_data_okc <-rebounding_data %>%
+  filter(team == 'OKC')
+oreb_pred = sum(rebounding_data_okc$offensive_rebounds, 80)/sum(rebounding_data_okc$off_rebound_chances, 80)
+#0.3025249
+paste("OKC's predicted offensive rebound percent for game 81 is", round(oreb_pred * 100, 2), "%")
+
+rebounding_data_okc[81,]
+```
+
+<span style="color:red">**ANSWER 1:**</span>    
+
+30.3% 
+
+### Question 2  
+
+There are a few limitations to the method we used above. For example, if a team has a great offensive rebounder who has played in most games this season but will be out due to an injury for the next game, we might reasonably predict a lower team offensive rebound percent for the next game.  
+
+Please discuss how you would think about changing our original model to better account for missing players. You do not have to write any code or implement any changes, and you can assume you have access to any reasonable data that isn't provided in this project. Try to be clear and concise with your answer.  
+
+<span style="color:red">**ANSWER 2:**</span>  
+
+Instead of treating all players equally, we can gather historical offensive rebounding rates for each player in the team. Calculate the offensive rebounding percentage for each player by dividing their offensive rebounds by their offensive rebound chances. This will provide a more granular understanding of each player's contribution to offensive rebounding.
+
+We can also calculate a weighted average offensive rebounding percentage for the team based on player-specific offensive rebounding rates and their respective playing time. Players who are strong offensive rebounders and have been actively playing should contribute more to the weighted team average. We can also incoporate recent performance on player data (assists, steals, blocks, defensive rebounds, turnovers forced, fouls committed, minutes played, points scored). A player's recent performance in offensive rebounding in addition to their overall season statistics could help capture any changes in player form or strategies that might affect offensive rebounding rates. 
+
+Similarly, we could introduce an adjustment factor that considers player availability for the next game. If a key offensive rebounder will be missing due to injury, reduce their contribution to the weighted team average. This can be done by estimating the expected offensive rebounding rate of the replacement player, based on their historical data. Continuously updating the model with new data, reflecting changes in player availability and performance over time ensures that the model adapts to evolving team dynamics and provides accurate predictions.
+
+
+### Question 3  
+
+In question 2, you saw and discussed how to deal with one weakness of the model. For this question, please write about 1-3 other potential weaknesses of the simple average model you made in question 1 and discuss how you would deal with each of them. You may either explain a weakness and discuss how you'd fix that weakness, then move onto the next issue, or you can start by explaining multiple weaknesses with the original approach and discuss one overall modeling methodology you'd use that gets around most or all of them. Again, you do not need to write any code or implement any changes, and you can assume you have access to any reasonable data that isn't provided in this project. Try to be clear and concise with your answer.  
+
+<span style="color:red">**ANSWER 3:**</span>    
+
+1. In general, averages are sensitive to extreme values and outliers, and thus provide a rather rough estimate to the data. Outliers can disproportionately affect the mean and lead to skewed predictions. One way to mitigate this issue is by using a weighted average instead of a simple average. Assigning weights based on data quality or domain knowledge can help downplay the impact of outliers.
+
+2. If the data is not evenly distributed across all games, the simple average may not provide an accurate result. For example, if a game was disproportionate in its time spent on defense vs. offense, or more shots were made, therefore less chances of a rebound, it could have a much lower offensive rebound score, despite a rather successful game. Implementing a data smoothing technique such as Laplace smoothing or Bayesian smoothing can help account for games with limited data points. These methods incorporate prior knowledge or assumptions to make more informed predictions.
+
+3.  The simple average model doesn't account for temporal changes and trends in the data. Data distributions, preferences, or behaviors might change over time, leading to inaccurate predictions. Unlike moving averages, this method does not account for incremental changes over time. Introduce time-based adjustments or moving averages to capture evolving trends. For instance, you could calculate weighted averages over rolling windows to give more weight to recent data, reflecting current trends more accurately.
+
+Solution: Hierarchial Bayesian Model
+Utilizing a hierarchical Bayesian model offers a more robust approach. This type of model allows for the incorporation of prior information and domain knowledge, such as past games and player scores which can address sensitivity to outliers and unequal data distribution. It also naturally accommodates temporal changes.
+
+1. Handling Outliers: Bayesian models can incorporate prior distributions that reflect domain knowledge, which helps prevent outliers from excessively influencing the model. Outliers will be down-weighted due to the influence of the prior.
+
+2. Unequal Data Distribution: Hierarchical models can pool information across teams and players, sharing strength across limited data. This pooling effect helps entities with sparse data borrow information from similar entities, making predictions more reliable.
+
+3. Temporal Changes and Trends: Bayesian models can be designed to include time-dependent parameters that capture evolving trends. By setting up appropriate temporal priors, the model adapts to changing patterns of player or team rebounding over time.
+
+**Thank you so much for your time and consideration for this position. I thoroughly enjoyed working through this data challenge, and truly look forward to hearing from you!**
+
+Appendix
+
+```{r}
+# Question 1
+
+# awards_player_data <- merge(x = player_data, y = awards, on = "nbapersonid", all.X = TRUE)
+# awards_player_data
+# avgpointsawards <- awards_player_data %>%
+#   select(c(nbapersonid,player,games,points,`All NBA First Team`,`All NBA Second Team`,`All NBA Third Team`,all_star_game))
+#   #mutate(points_per_game =points / games)
+# avgpointsawards
+# 
+# avgpointsawards$points_per_game_t1 <- 0
+# avgpointsawards$points_per_game_t2 <- 0
+# avgpointsawards$points_per_game_t3 <- 0
+# avgpointsawards$points_per_game_as <- 0
+# 
+# if (avgpointsawards["All NBA First Team"] == 1) {
+#   avgpointsawards$points_per_game_t1 <- points / games 
+#   } else if (avgpointsawards["All NBA Second Team"] == 1) {
+#     avgpointsawards$points_per_game_t2 <- points / games 
+#     } else if (avgpointsawards["All NBA Third Team"] == 1) {
+#     avgpointsawards$points_per_game_t3 <- points / games 
+#     } else if (avgpointsawards["all_star_game"] == TRUE) {
+#     avgpointsawards$points_per_game_as <- points / games 
+# }
+# 
+# print(mean(avgpointsawards$points_per_game_t1))
+# print(mean(avgpointsawards$points_per_game_t2))
+# print(mean(avgpointsawards$points_per_game_t3))
+# print(mean(avgpointsawards$points_per_game_as))
+
+
+#Data Cleaning Interlude
+
+# career_data_2 <- career_data  %>%
+#   select(nbapersonid, player, draftyear, season,games,games_start,mins,`All NBA First Team`, `All NBA Second Team`, `All NBA Third Team`, `Defensive Player Of The Year_rk`, `Most Valuable Player_rk`, season_career) %>%
+#   filter(season == 2011 | season == 2019 | season == 2020)
+# career_data_2
+
+# career_data_3 <- career_data %>%
+#   select(player, draftyear, season, season_career) %>%
+#   arrange(player,season) %>%
+#   mutate(years = season - draftyear)
+# career_data_3 
+# 
+# 
+# career_data_4 <- career_data %>%
+#   select(player, draftyear, season, season_career) %>%
+#   arrange(player,season) %>%
+#   mutate(years = season - draftyear) %>%
+#   # filter(years > 4) %>%
+#   count(player, season_career) %>%
+#   group_by(player) %>% 
+#   pivot_wider(names_from = season_career, values_from = n)
+# career_data_4 
+
+#Feature Selection
+# correlationMatrix <- cor(career_data_train[,3:43])
+# highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5)
+# print(highlyCorrelated)
+# 
+# control <- trainControl(method="repeatedcv", number=10, repeats=3)
+# model_feat <- train(career~., data=career_data_train, method="lvq", preProcess="scale", trControl=control)
+# importance <- varImp(model_feat, scale=FALSE)
+# plot(importance)
+
+#Unused Models
+# fit1 <- lm(season_career ~ PER, data = career_data_train)
+# summary(fit1)
+
+# Y <- career_data_train[,47]
+# X <- model.matrix(season_career~., data=career_data_train)[, -1]
+# colnames(X)
+# 
+# fit.lambda <- glmnet(X, Y, alpha=1, lambda = 100) 
+# names(fit.lambda)
+
+# Model 1: Linear Regression
+# fit_lin <- glm(as.numeric(career)~ games + games_start + WS + PER + BPM +VORP +rookie_all_star_game + season_career, career_data_train, family=gaussian)
+# 
+# summary(fit_lin, results=TRUE)
+
+#head(pp <- fitted(test))
+#pp
+# pp.write <- cbind(dwrite, predict(test, newdata = dwrite, type = "probs", se = TRUE))
+# lpp <- melt(pp.write, id.vars = c("ses", "write"), value.name = "probability")
+# head(lpp)
+
+# library(caret)
+# library(randomForest)
+# library(varImp)
+# regressor <- randomForest(career ~ season_career, data= career_data_train, importance=TRUE) # fit the random forest with default parameter
+# varImp(regressor) # get variable importance, based on mean decrease in accuracy
+# varImp(regressor, conditional=TRUE) # conditional=True, adjusts for correlations between predictors
+# varimpAUC(regressor)
+
+# career_data_corr <- career_data_train %>%
+#   
+# 
+# control <- trainControl(method="repeatedcv", number=10, repeats=3)
+# model_feat <- train(career~., data=career_data_train, method="lvq", preProcess="scale", trControl=control)
+# importance <- varImp(model_feat, scale=FALSE)
+# plot(importance)
+
+
+# Model 2: Logistic Regression
+# fit_log <- glm(career ~games + games_start + WS + PER + BPM +VORP +rookie_all_star_game + season_career, career_data_train, family=binomial(logit))
+# summary(fit_log, results=TRUE)
+
+# Model 3: Multinomial Regression
+# fit_multi <- multinom(career ~ ., data = career_data_train)
+# summary(fit_multi)
+# z <- summary(fit_multi)$coefficients/summary(fit_multi)$standard.errors
+# z
+# p <- (1 - pnorm(abs(z), 0, 1)) * 2
+# p
+#exp(coef(test))
+# predict(fit_multi, newdata = career_data_test, type = "class")
+# predict(fit_multi, newdata = career_data_test, type = "prob")
+
+# Xy_design <- model.matrix(career ~.+0, career_data_train)
+# Xy <- data.frame(Xy_design, career_data_train$career)  
+# fit.all <- bestglm(Xy, family = binomial, method = "exhaustive", IC="AIC", nvmax = 10)
+# confint.default(fit_lin)
+# chi.sq <- 8990.60-932.19
+# pchisq(chi.sq, 1, lower.tail=FALSE)
+# anova(fit_lin, test="Chisq")
+#Anova(fit_log)
+#AIC <- fit_lin$deviance + 2*parameters
+# fit_lin_predict <- predict(fit_lin, career_data_test, type="response") 
+# fit_lin_predict
+# fit1.roc<- multiclass.roc(career_data_train$career, fit_lin$fitted, plot=T, col="blue")
+# fit1.roc$auc 
+# pROC::auc(fit1.roc)
+# error.training <- mean(fit1.pred.5 != career_data_train$career)
+# error.training
+```
+
