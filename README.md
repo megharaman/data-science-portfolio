@@ -10,8 +10,8 @@ Hi, I'm Megha – a data scientist with a passion for storytelling through data,
 **Tools:** Python, scikit-learn, Jupyter, k-means, random forest  
 Quantifying the sales lost from McDonalds during COVID-19 Pandemic. Utilize a variety of trend-forecasting mythologies and custom segmentation to calculate the potential realized profit during this period.
 
-- [Notebook](./customer-segmentation/notebook.ipynb)
-- [Interactive HTML Report](./customer-segmentation/report.html)
+- [Notebook](./mcdonalds-forecasting/mcd-datat.ipynb)
+- [Interactive HTML Report](./mcdonalds-forecasting/mcd-data.pptx)
 
 ---
 
@@ -20,7 +20,7 @@ Quantifying the sales lost from McDonalds during COVID-19 Pandemic. Utilize a va
 Analyzed NCAA basketball data to uncover patterns and insights by player and team statistics.
 
 - [RMarkdown File](./ncaa-bball-data-analysis/NCAA_basketball_data_analysis.Rmd)
-- [Rendered HTML Report](./ncaa-bball-data-analysis/NCAA_basketball_data_analysis_slidest.html)
+- [Rendered HTML Report](./ncaa-bball-data-analysis/NCAA_basketball_data_analysis_slides.html)
 
 ---
 
@@ -37,7 +37,7 @@ To better predict the weekly adoption of NFTs, I utilized CoinBase and LooksRare
 **Tools:** R, ggplot2, RMarkdown, HTML  
 Perform EDA and a classification machine learning model on Oklahoma City Thunder players. Utilizing Naive Bayes classification, I predict the future status of players based on performance statistics.
 
-- [RMarkdown File](./oct-data-challenge)/awards_project.Rmd)
+- [RMarkdown File](./oct-data-challenge/awards_project.Rmd)
 - [Rendered HTML Report](./oct-data-challenge/awards_project.html)
 
 ---
@@ -55,7 +55,7 @@ Junior year of college, I took a class about the Mural Arts Program in Philadelp
 This deep dive aims to identify what affects the music that we listen to. I analyze a variety of musical attributes and listening history to see if we can identify trends in listening history. Utilizing this data, I created a popularity prediction metric to see based on internal (music factors) and external (namely socioeconomic factors), can I predict what songs will be popular? 
 
 - [Link to medium article](./spotify-data/README.md)
-- [RMarkdown File](./spotify-data/awards_project.Rmd)
+- [RMarkdown File](./spotify-data/SpotifyMusicTrends.Rmd)
 ---
 
 ## About Me
