@@ -37,7 +37,7 @@ To better predict the weekly adoption of NFTs, I utilized CoinBase and LooksRare
 **Tools:** R, ggplot2, RMarkdown, HTML  
 Perform EDA and a classification machine learning model on Oklahoma City Thunder players. Utilizing Naive Bayes classification, I predict the future status of players based on performance statistics.
 
-- [RMarkdown File](./oct-data-challenge)/awards_project.Rmd)
+- [RMarkdown File](./oct-data-challenge/awards_project.Rmd)
 - [Rendered HTML Report](./oct-data-challenge/awards_project.html)
 
 ---
@@ -55,7 +55,7 @@ Junior year of college, I took a class about the Mural Arts Program in Philadelp
 This deep dive aims to identify what affects the music that we listen to. I analyze a variety of musical attributes and listening history to see if we can identify trends in listening history. Utilizing this data, I created a popularity prediction metric to see based on internal (music factors) and external (namely socioeconomic factors), can I predict what songs will be popular? 
 
 - [Link to medium article](./spotify-data/README.md)
-- [RMarkdown File](./spotify-data/awards_project.Rmd)
+- [RMarkdown File](./spotify-data/SpotifyMusicTrends.Rmd)
 ---
 
 ## About Me
