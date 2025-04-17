@@ -11,7 +11,7 @@ Hi, I'm Megha – a data scientist with a passion for storytelling through data,
 Quantifying the sales lost from McDonalds during COVID-19 Pandemic. Utilize a variety of trend-forecasting mythologies and custom segmentation to calculate the potential realized profit during this period.
 
 - [Notebook](./projects/mcdonalds-forecasting/mcd-data.ipynb)
-- [Interactive HTML Report](./projects/mcdonalds-forecasting/mcd-data.pptx)
+- [Presentation](./projects/mcdonalds-forecasting/mcd-data.pptx)
 
 ---
 
@@ -27,13 +27,13 @@ Analyzed NCAA basketball data to uncover patterns and insights by player and tea
 ### 3. [NFT Adoption Forecasting](./projects//nft-adoption)
 **Tools:** Excel, Statistical Modeling, Time Series Forecasting
 
-To better predict the weekly adoption of NFTs, I utilized CoinBase and LooksRare data to see if I can predict the adoption of NFTs based on a training dataset. The two models developed here are a Pareto II and and Burr XII. Finally utilizing the Burr XII and a few covariances, I get pretty close at accurately predicting the distribution of sales cumulatively and weekly. 
+To better predict the weekly adoption of NFTs, I utilized CoinBase and LooksRare data to see if I could predict the adoption of NFTs based on a training dataset. The two models developed here are 1) Pareto II and 2) Burr XII. Finally utilizing the Burr XII and a few covariances, I get pretty close at accurately predicting the distribution of sales cumulatively and weekly. 
 
 - [Link to website with synthesized data](./projects/philly-murals-viz/README.md)
 
 ---
 
-### 4. [Oklahoma City Thunder](./projects/oct-data-challenge))
+### 4. [Oklahoma City Thunder](./projects/oct-data-challenge)
 **Tools:** R, ggplot2, RMarkdown, HTML  
 Perform EDA and a classification machine learning model on Oklahoma City Thunder players. Utilizing Naive Bayes classification, I predict the future status of players based on performance statistics.
 
